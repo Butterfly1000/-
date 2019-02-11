@@ -82,6 +82,8 @@ mysql_query("UNLOCK TABLES"); //解除锁定
 
 update、delete，InnoDB会自动给涉及的数据加排他锁
 
+行级锁都是基于索引的，如果一条SQL语句用不到索引是不会使用行级锁的，会使用表级锁把整张表锁住，这点需要注意。
+
 
 
 
