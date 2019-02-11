@@ -51,7 +51,49 @@ char
 
 blob/text
 尽量避免使用blob/text类型，查询会使用临时表，导致严重的性能开销。
+--------------------------------------------------------------------------------
+BLOB小课堂：
+BLOB (binary large object)，二进制大对象，是一个可以存储二进制文件的容器。
+在计算机中，BLOB常常是数据库中用来存储二进制文件的字段类型。BLOB是一个大文件，
+典型的BLOB是一张图片或一个声音文件，由于它们的尺寸，必须使用特殊的方式来处理（例如：上传、下载或者存放到一个数据库）。
+根据Eric Raymond的  说法，处理BLOB的主要思想就是让文件处理器（如数据库管理器）不去理会文件是什么，而是关心如何去处理它。
+但也有专家强调，这种处理大数据对象的方法是把双刃剑，它有可能引发一些问题，如存储的二进制文件过大，会使数据库的性能下降。
+在数据库中存放体积较大的多媒体对象就是应用程序处理BLOB的典型例子。
 
+mysql BLOB类型  
+    MySQL中，BLOB是个类型系列，包括：TinyBlob、Blob、MediumBlob、LongBlob，这几个类型之间的唯一区别是在存储文件的最大大小上不同。  
+　　MySQL的四种BLOB类型  
+　　类型 大小(单位：字节)  
+　　TinyBlob 最大 255  
+　　Blob 最大 65K  
+　　MediumBlob 最大 16M  
+　　LongBlob 最大 4G  
+  
+linux修改etc/my.cnf  
+    [mysqld]  
+    max_allowed_packet = 16M //不同于[mysqldump]下的max_allowed_packet 
+    
+转自:http://blog.sina.com.cn/s/blog_6cd73dfb0100ymxx.html    
+---------------------------------------------------------------------------------
+    
+枚举
+有时候可以使用枚举代替常用的字符串类型把不重复的集合存储成一个预定的集合非常紧凑，把列表值压缩到一个或两个字节，
+内部存储的是整数。
+尽量避免使用数字作为ENUM枚举的常量，易混乱。
+排序是按照内部存储的整数进行排序。
+枚举表（使用枚举的表）会使表大小大大减小。
+-----------------------
+ENUM是枚举类型，它虽然只能保存一个值，却能够处理多达65535个预定义的值。
+
+CREATE TABLE student(
+id INT(11) PRIMARY key auto_increment,
+name VARCHAR(10) not null,
+sex ENUM('boy','girl','secret') DEFAULT 'secret'
+)ENGINE=INNODB
+
+如果sex列中插入了除bor,girl,secret之外的其它字符，则视为空字符串
+转自：https://www.cnblogs.com/dcdcdc/p/5157321.html
+-----------------------
 
 
 
