@@ -105,8 +105,13 @@ sex ENUM('boy','girl','secret') DEFAULT 'secret'
 auto_increment,default,not null,zerofill
 
 
-延伸1：
+延伸1：Mysql基础操作
+常见操作
+MYSQL的连接和关闭:mysql -u -p -h -P    用户名、密码、主机、端口
+其他：\G（打印结果垂直显示，格式化）、\c（取消当前mysql命令）、\q（退出mysql）、\s(显示mysql服务器状态)、\h(帮助信息)、\d(改变执行服务)
 
+延伸2:Mysql数据表引擎
+InnoDB
 
 
 
