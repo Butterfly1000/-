@@ -19,6 +19,15 @@ ACID规则：
 删除整张表
 等等(Etc)...
 
+开启事务后会把所有的操作先存放到事务日志（mysql下的）data目录下的ib_logfile0 ，ib_logfile01
+
+为什么要事务，例子：
+需求： mike 给jack 转账1000元
+假设转账分为两部完成
+1. mike减少1000  update test set money = money - 1000 where name= ‘mike’
+2. jack增加1000  update test set money = money + 1000 where name= ‘jack’
+如果在完成了第1步的时候突然宕机了， mike的钱减少了而jack的钱没有增加那mike岂不是白白丢了1000元；这时候就需要用到我们的事务了
+
 说了这边多，下面就简单介绍下事务的开启方式：
 tp3.2事务
 M()->startTrans();//开启事务
@@ -34,8 +43,22 @@ if(true){
   $mysqli->rollback();//事务回滚
 }
 
+mysql事务有两种方法
+第一种：
+begin|begin work|start transaction 
+commit|commit work
+rollback
+第二种：
+直接用set来改变mysql的自动提交模式
+MYSQL默认是自动提交的，也就是你提交一个QUERY，它就直接执行！
+我们可以通过
+set autocommit=0 禁止自动提交
+set autocommit=1 开启自动提交
+来实现事务的处理。
+
 接下去说一下锁，
 锁的概念很复杂，但简单的说就是防止访问冲突。
+
 A,B,C三个访问。 
 A先执行，Bob向Job转100元，
 三个步骤:1.Bob账户是否有100元；2.Bob账户扣除100元;3.Job账户加上100元。
@@ -49,8 +72,17 @@ tp3.2锁操作
 M()->lock(true)->where('id=1')->select();
 
 mysql
-利用for update 开启行锁
+利用for update 开启行锁 （这种事排他锁，也有称为“悲观锁”）
 select `number` from storage where id=1 for UPDATE 
+
+上面是行锁，innodb支持行级锁（默认，当然也支持表锁），但Myisam不支持行级锁，Myisam只支持表锁，而且不支持事务。
+表锁，顾名思义就是把这张表锁住，等这一个过程中，其他人无法读取或操作表数据。
+mysql_query("LOCK TABLES `user` WRITE|READ"); //锁住`user`表
+mysql_query("UNLOCK TABLES"); //解除锁定
+
+update、delete，InnoDB会自动给涉及的数据加排他锁
+
+
 
 
 
