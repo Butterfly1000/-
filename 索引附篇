@@ -1,0 +1,17 @@
+索引的优点
+合适的索引，可以大大减小mysql服务器扫描的数据量，避免内存排序和临时表，提高应用程序的查询性能。
+
+索引的类型
+mysql数据中有多种索引类型，primary key，unique，normal，但底层存储的数据结构都是BTREE；有些存储引擎还提供hash索引，全文索引。
+
+BTREE是最常见的优化要面对的索引结构，都是基于BTREE的讨论。
+【转】https://www.cnblogs.com/scode2/p/8671268.html
+
+索引的类型
+普通索引：最基本的索引，没有任何约束限制 ALTER TABLE `table_name` ADD INDEX index_name(`column`) 
+唯一索引：与普通索引类似，但是具有唯一约束性 ALTER TABLE `table_name` ADD UNIQUE (`column`) 
+主键索引：特殊的唯一索引，但不允许有空值  ALTER TABLE `table_name` ADD PRIMARY KEY (`column`) 
+组合索引：将多个列组合在一起穿件索引，可以覆盖多个列 ALTER TABLE `table_name` ADD INDEX index_name ( `column1`, `column2`, `column3` )
+外键索引：只有InnoDB引擎才可以使用外键索引，可以与主键构成参照完整性约束，保证数据一致性，完整性和实现级联操作 
+全文索引：Mysql自带只有MyISAM才拥有全文索引，并且是对英文进行全文索引。 ALTER TABLE `table_name` ADD FULLTEXT( `column`) 
+
