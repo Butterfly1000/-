@@ -1,0 +1,51 @@
+Mysql的关联update语句
+延伸：Mysql的关联查询语句
+
+问题：
+有A(id,sex,par,c1,c2)和B(id,age,c1,c2)两张表，其中A.id与B.id关联，现在要求写出一条SQL语句，将B中的age>50的记录c1，c2更新到A表的c1和c2字段。
+
+Update A,B SET A.c1=B.c1 , A.c2=B.c2  where A.id=B.id and B.age>50;
+Update A innner join B on A.id=B.id set A.c1=B.c1 , A.c2=B.c2 where B.age>50;
+
+6中关联查询
+交叉连接 （CROSS JOIN）
+内连接 (INNER JOIN)
+外连接 (LEFT JOIN / RIGHT JOIN)
+联合查询 (UNION 和 UNION ALL)
+外连接 （FULL JOIN）
+
+交叉连接（混乱，无关联，结果集大，基本不怎么会使用）
+select * from A,B(,C);
+select * from A cross join B (cross join C);
+
+内连接（简写join）
+select * from A,B where A.id=B.id;
+select * from A INNER JOIN B ON A.id=B.id;
+多表中同时符合某种条件的数据记录的集合
+
+
+内连接分为三类：
+等值连接：ON A.id=B.id
+不等值连接: ON A.id>B.id
+自连接：select * from A as t1 join A as t2 on t1.id=t2.pid;
+
+左外连接 LEFT JOIN   以左边为主（先查出），ON关联条件匹配右表，右表若无内容显示为null，全称LEFT OUTER JOIN
+
+右外连接 RIGTH JOIN  以右边为主（先查出），ON关联条件匹配左表，左表若无内容显示为null，全称RIGHT OUTER JOIN
+
+联合查询：
+select * from A UNION select * from B UNION ...
+就是将多个结果集的集合合并在一起，UNION前的结果集为基准，需要注意的是联合查询的列数要相等，相同的记录会合并，
+使用UNION ALL不会合并重复的记录。但效率上UNION要优于UNION ALL;
+
+全连接
+Mysql不支持全连接，但是我们可以通过UNION一级RIGHT JOIN和LEFT JOIN实现
+SELECT * FROM A LEFT JOIN B ON A.id=B.id UNION
+SELECT * FROM A RIGHT JOIN B ON A.id=B.id;
+
+嵌套查询
+用一条SQL语句的结果作为另一条SQL语句的查询条件
+select * from A WHERE pre in （SELECT sign FROM B）
+
+
+
