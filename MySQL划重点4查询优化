@@ -89,7 +89,11 @@ WHERE f.country = 'China';
 6.优化子查询（嵌套查询）
 尽可能使用关联查询代替
 
-7.优化
+7.优化GROUP BY 和 DISTINCT
+这两种查询均可以使用索引来优化，是最有效的优化方法;
+关联查询中，使用标识列进行分组效率会更高;(标识列即主键或AUTO_INCREMENT列)
+如果不需要使用到order by，进行group by时使用order by NULL,MySQL不会在进行文件排序
+*WITH ROLLUP超级聚合，可以挪到应用程序处理
 
 8.优化limit分页
 LIMIT偏移量大的时候，查询效率较低
