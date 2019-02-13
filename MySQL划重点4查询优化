@@ -41,7 +41,68 @@ show global status 查看服务器级别的所有计数
 6.改变数据库和表的结构，修改数据表范式。（非常频繁获取但又需要连表的字段，可以考虑用冗余方式多加一个字段，不用连表，用空间换时间，当然也破坏范式）
 7.重写SQL语句，让优化器可以以更优的方式执行查询
 
+优化长难查询语句
+1.一个复杂查询还是多个简单查询
+MySQL内部每秒能扫描上百万行数据，相比之下，响应数据给客服端就要慢得多
+使用尽可能少的查询是好的，但是有时将一个大的查询分解成多个小的查询是很有必要的（例如：大量连表（且其中某些表数据获取少，但表数据量很大）.个人理解）
 
+2.切分查询
+将一个大的查询分为多个小的相同查询
+比如要删除1000万数据，每次删除1w，然后暂停1会再行下一次，会比一次性删除1000w条数据对服务器的开销损耗更小，
+也能减少锁表时间太长的情况。
+
+3.分解关联查询
+将一条关联语句分解分解成多条SQL来执行
+让缓存的效率更高
+执行单个查询可以减少锁的竞争
+在应用层做关联可以更容易对数据库进行拆分
+查询效率会有大幅提升
+较小冗余记录查询
+
+4.优化count()查询
+这个真的会很消耗查询时间哦，特别是数据量很大的情况下。
+方法：
+count（*）会忽略所有列，直接统计所有行数，因此不用使用count（列名）
+MyISAM中，没有任何where条件的count(*)非常快，然后当有where，它的count数据就不见得比其他引擎快了（谁快难说）
+
+但是这样还是会消耗一定的时间：
+可以使用explain查询近似值，用近似值取代count（*）
+添加汇总表（精确，更新的时候自动加1）
+使用缓存（近似值，偏差大小，看缓存时间）
+
+5.优化关联查询（其实就是要加索引）
+确定ON或者USING子句的列上有索引
+[sql]
+SELECT f.color, c.is_primary, c.is_dark, c.is_rainbow  
+FROM flags f    www.2cto.com  
+INNER JOIN color c ON f.color = c.color  
+WHERE f.country = 'China';  
+等价于
+[sql]
+SELECT f.color, c.is_primary, c.is_dark, c.is_rainbow  
+FROM flags f  
+INNER JOIN color c USING(color)  
+WHERE f.country = 'China';  
+
+确保group by 和order by 中只有一个列表的值，这样MySQL才有可能用索引。
+
+6.优化子查询（嵌套查询）
+尽可能使用关联查询代替
+
+7.优化
+
+8.优化limit分页
+LIMIT偏移量大的时候，查询效率较低
+可以记录上次查询最大的ID,下次查询时，直接根据该ID来查询
+释：
+limit（offset，size）; offset偏移量 size数量
+select * from user limit 10000,10;//耗时多
+select * from user where uid >=( select uid from user order by uid limit 10000,1 ) limit 10;//耗时小
+当然如果记录下ID max_id最大的ID
+select * from user where uid >max_id limit 10;//最优
+
+9.优化UNION查询
+UNION ALL 的效率高于UNION (当然二者有偏差，具体见划重点3)
 
 
 
