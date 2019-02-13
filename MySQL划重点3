@@ -36,7 +36,7 @@ select * from A INNER JOIN B ON A.id=B.id;
 联合查询：
 select * from A UNION select * from B UNION ...
 就是将多个结果集的集合合并在一起，UNION前的结果集为基准，需要注意的是联合查询的列数要相等，相同的记录会合并，
-使用UNION ALL不会合并重复的记录。但效率上UNION要优于UNION ALL;
+使用UNION ALL不会合并重复的记录。效率上UNION ALL要优于UNION（合并费时）;
 
 全连接
 Mysql不支持全连接，但是我们可以通过UNION一级RIGHT JOIN和LEFT JOIN实现
