@@ -1,0 +1,53 @@
+其实，一直在想是先开启tp5篇的一些总结，还是swoole篇的一些学习，还是决定先开始swoole篇。
+
+★官网地址:https://wiki.swoole.com/wiki/index/prid-1
+项目的下载应该说很简单了，在phpize篇介绍中，也很好的介绍了应该如何生成php的swoole扩展。
+
+Swoole是PHP的协程高性能网络通信引擎，使用C/C++语言编写，提供了多种通信协议的网络服务器和客户端模块。包括：
+(1)TCP/UDP/UnixSocket服务器
+(2)Http/WebSocket/Http2.0服务器端
+(3)异步/同步TCP/UDP网络客户端
+(4)异步MySQL
+(5)异步Redis
+(6)AsyncTask
+(7)毫秒定时器
+(8)异步文件读写
+(9)异步DNS查询
+(10)Http客户端
+Swoole4支持完整的协程编程模式，可以使用完全同步的代码实现异步程序。PHP代码无需额外增加任何关键词，底层自动进行协程调度，实现异步IO。
+注:Swoole4只支持php7，不支持php5;
+
+php7的运行效率是php5的2倍左右，可以说是对php进行了极大的性能提升。swoole+php7已经可以作为一般游戏的后台开发了。swoole的贡献确实是巨大的，
+简单的一点，对php长连接的提供。
+
+★Server服务端
+请勿在使用Server创建之前调用其他异步IO的API，否则将会创建失败。可以在Server启动后onWorkerStart回调函数中使用。
+
+构建Server对象
+$serv = new Swoole\Server('0.0.0.0', 9501, SWOOLE_BASE, SWOOLE_SOCK_TCP);
+这就是初始化对象,参数'0.0.0.0'是本地，'9501'端口号，SWOOLE_SOCK_TCP开启TCP服务。
+
+设置运行时参数
+$serv->set(array(
+    'worker_num' => 4,
+    'daemonize' => true,
+    'backlog' => 128,
+));
+
+注册事件回调函数
+形式一:
+$serv->on('Connect',function($server,$fd,$reactorId){ });
+形式二:
+$serv->on('Connect',[$serv,'onConnect']);
+public function onConnect($server,$fd,$reactorId){};
+
+启动服务器
+$serv->start();
+
+属性列表
+$serv->manager_pid;  //管理进程的PID，通过向管理进程发送SIGUSR1信号可实现柔性重启
+$serv->master_pid;  //主进程的PID，通过向主进程发送SIGTERM信号可安全关闭服务器
+$serv->connections; //当前服务器的客户端连接，可使用foreach遍历所有连接
+
+
+
