@@ -1,0 +1,120 @@
+Server
+注意:Server只能用于php-cli环境，在其他环境下会抛出致命错误
+简介
+★构建Server对象
+$serv = new Swoole\Server('0.0.0.0', 9501, SWOOLE_BASE, SWOOLE_SOCK_TCP);
+★设置运行时参数
+$serv->set(array(
+    'worker_num' => 4,
+    'daemonize' => true,
+    'backlog' => 128,
+));
+★注册事件回调函数
+$serv->on('Connect', 'my_onConnect');
+$serv->on('Receive', 'my_onReceive');
+$serv->on('Close', 'my_onClose');
+
+这边要提及php的四种回调方式，都可以使用，
+1.匿名函数（可使用use向匿名函数传递参数）
+$server->on('Request', function ($req, $resp) use ($a, $b, $c) {
+    echo "hello world";
+});
+
+2.类静态方法
+class A
+{
+    static function test($req, $resp)
+    {
+        echo "hello world";
+    }
+}
+$server->on('Request', 'A::Test');
+$server->on('Request', array('A', 'Test'));
+
+3.函数
+function my_onRequest($req, $resp)
+{
+    echo "hello world";
+}
+$server->on('Request', 'my_onRequest');
+
+4.对象方法
+class A
+{
+    function test($req, $resp)
+    {
+        echo "hello world";
+    }
+}
+
+$object = new A();
+$server->on('Request', array($object, 'test'));
+
+★启动服务器
+$serv->start();
+
+★属性列表
+$serv->manager_pid;  //管理进程的PID，通过向管理进程发送SIGUSR1信号可实现柔性重启
+$serv->master_pid;  //主进程的PID，通过向主进程发送SIGTERM信号可安全关闭服务器
+$serv->connections; //当前服务器的客户端连接，可使用foreach遍历所有连接
+
+函数
+★符号表示规则（下述规则仅用于文档编写，不代表实际PHP语法）
+class->function 对象方法
+class::function 类静态方法
+class->$var 对象属性
+class::$var 类静态属性
+
+★类名简写规则（在文档中未特殊说明的类名，均表示在Swoole命名空间内）
+由于Swoole扩展提供的所有类均以Swoole作为命名空间，本文档在表示类名时不再添加Swoole顶层命名空间。
+Swoole\Coroutine\Client将简化为Coroutine\Client
+Swoole\Server简化为Server
+
+★Server::__construct
+创建一个异步Server对象。
+$serv = new Server(string $host, int $port = 0, int $mode = SWOOLE_PROCESS,
+    int $sock_type = SWOOLE_SOCK_TCP);
+ $host 主机 指定监听的ip地址
+ $port 端口 指定监听的端口
+ $mode 运行的模式 (详情：https://wiki.swoole.com/wiki/page/353.html)
+ SWOOLE_PROCESS多进程模式（默认）
+ SWOOLE_BASE基本模式(单线程模式)
+ $sock_type指定Socket的类型，支持TCP、UDP、TCP6、UDP6、UnixSocket Stream/Dgram 6种    
+
+异常
+监听端口失败会抛出异常，可以使用try/catch捕获异常
+
+注意事项
+底层有保护机制，一个PHP程序内只能创建启动一个Server实例
+如果要实现多个Server实例的管理，父进程必须使用exec，不得使用fork
+
+随机可用端口
+1.9.6增加了随机监听可用端口的支持，$port参数可以设置为0，操作系统会随机分配一个可用的端口，进行监听。
+可以通过读取$server->port得到分配到的端口号。
+
+SYSTEMD监听端口
+
+★Server->set（Server->set必须在Server->start前调用）
+$serv->set(array(
+    'reactor_num' => 2, //reactor thread num
+    'worker_num' => 4,    //worker process num
+    'backlog' => 128,   //listen backlog
+    'max_request' => 50,
+    'dispatch_mode' => 1,
+));
+
+最大连接
+max_conn => 10000, 此参数用来设置Server最大允许维持多少个tcp连接。超过此数量后，新进入的连接将被拒绝。
+此参数不要调整的过大，根据机器内存的实际情况来设置。底层会根据此数值一次性分配一块大内存来保存Connection信息
+
+守护进程化
+daemonize => 1，加入此参数后，执行php server.php将转入后台作为守护进程运行
+
+reactor线程数
+reactor_num => 2，通过此参数来调节Reactor线程的数量，以充分利用多核
+
+worker进程数（当设定的Worker进程数小于reactor线程数时，会自动调低reactor线程的数量）
+worker_num => 4，设置启动的Worker进程数量。Swoole采用固定Worker进程的模式。
+全异步非阻塞服务器 worker_num配置为CPU核数的1-4倍即可。
+同步阻塞服务器，worker_num配置为100或者更高，具体要看每次请求处理的耗时和操作系统负载状况。
+
