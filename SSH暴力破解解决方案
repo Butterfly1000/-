@@ -34,7 +34,8 @@ CentOS7用户使用systemctl restart sshd。
 
 ★方法二：限制登录IP
 
-如果你的公司或者常常需要登录服务器的工作网络环境拥有固定的IP地址时，限制登录IP地址就可以很好的保护服务器免受黑客攻击。如果没有上述的条件，我们也可以通过搭建堡垒机，将所有服务器都设置为允许堡垒机的IP地址登录即可保护您的服务器。
+如果你的公司或者常常需要登录服务器的工作网络环境拥有固定的IP地址时，限制登录IP地址就可以很好的保护服务器免受黑客攻击。
+如果没有上述的条件，我们也可以通过搭建堡垒机，将所有服务器都设置为允许堡垒机的IP地址登录即可保护您的服务器。
 
 操作起来相当简单，首先在/etc/hosts.allow中加入如下信息：
 
@@ -46,20 +47,21 @@ sshd:172.16.*.*
 
 sshd:all:deny
 
-这条信息表示sshd服务不允许向所有IP地址提供服务。
-
-如此一来服务器将只有指定的IP地址可以访问。
+这条信息表示sshd服务不允许向所有IP地址提供服务，如此一来服务器将只有指定的IP地址可以访问。
 
 ★方法三：使用非root用户登录
 
-禁止root用户登录并且设置允许其他用户登录后切换至root进行操作。这样黑客如果想要通过ssh登录服务器除了密码之外首先他还需要知道服务器允许登录的用户，这样将大大降低黑客攻破ssh的可能性。
+禁止root用户登录并且设置允许其他用户登录后切换至root进行操作。这样黑客如果想要通过ssh登录服务器除了密码之外首先他还需要知道服务器允许登录的用户，
+这样将大大降低黑客攻破ssh的可能性。
 
-首先，在服务器内创建一个用户，learntop:useradd learntop
-并且设置密码：passwd learntop ,当然密码需要尽量复杂。
+◆创建用户
+首先，在服务器内创建一个用户learntop，
+创建账号：useradd learntop
+设置密码：passwd learntop ,当然密码需要尽量复杂。
 
 接下来我们需要允许此用户能够以root用户身份运行命令。
 使用visudo命令进入文本编辑模式，于92行附近
-
+[root@localhost ~]#visudo
 ## Syntax:
 ##
 ## user MACHINE=COMMANDS
@@ -70,27 +72,32 @@ sshd:all:deny
 root ALL=(ALL) ALL
 learntop ALL=(ALL) NOPASSWD:ALL
 
-添加红色字体信息："ALL=(ALL) NOPASSWD:ALL"，保存退出后可以验证一下。
+上面添加："learntop ALL=(ALL) NOPASSWD:ALL"，保存退出后可以验证一下。（NOPASSWD:ALL的意思是sudo不用密码）
 
-[root@localhost ~]#visudo
-[root@localhost ~]# su learntop
-[learntop@localhost root]$ sudo su -
+[root@localhost ~]#su learntop              #切换到learntop用户,也可以是 su - learntop
+[learntop@localhost root]$sudo su -         #切换到root用户，sudo -i同样实现
 Last login: Tue May 22 12:55:36 CST 2018 on pts/1
-[root@localhost ~]#whoami
+[root@localhost ~]#whoami         #当前用户
 root
 
 首先使用su learntop切换至learntop用户,接下来我们可以使用sudo su -命令切换到root用户。
 
+◆拒绝root用户登录
 同样我们也可以通过远程登录方式验证，使用ssh客户端以learntop用户登录系统后，再使用sudo su -命令进行切换。
 
 在设置可以通过learntop用户登录系统并能够自由切换至管理员用户操作后，我们需要禁止root用户通过远程方式登录系统。
 
-在/etc/ssh/sshd_config文件内添加“PermitRootLoginno”，后重启sshd服务。启动后，root用户就将无法通过ssh服务直接连接到服务器。
+在/etc/ssh/sshd_config文件内添加“PermitRootLogin no”，后重启sshd服务。（#PermitRootLogin yes 去注释改为 PermitRootLogin no）
+
+systemctl restart sshd
+
+启动后，root用户就将无法通过ssh服务直接连接到服务器。
 
  
-
-当然除此之外还有许多可以限制黑客通过ssh暴力破解登录服务器的方法。例如使用密钥登录服务器等。但保护整个业务系统的安全最为重要的不是几个技术点，而是在结构设计的时候就预先考虑到安全的因素，例如不需要向公网提供服务的服务器就不设置公网IP地址，配置安全可靠的堡垒机。
+当然除此之外还有许多可以限制黑客通过ssh暴力破解登录服务器的方法。例如使用密钥登录服务器等。
+但保护整个业务系统的安全最为重要的不是几个技术点，而是在结构设计的时候就预先考虑到安全的因素，例如不需要向公网提供服务的服务器就不设置公网IP地址，
+配置安全可靠的堡垒机。
 ---------------------  
 参考文章：https://blog.csdn.net/gammey/article/details/80404375 
-
+         https://www.cnblogs.com/itech/archive/2009/08/07/1541017.html
 
