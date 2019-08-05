@@ -36,8 +36,21 @@ SHR：shared memory 共享内存
 3、计算某个进程所占的物理内存大小公式：RES – SHR
 4、swap out后，它将会降下来
 
-
-
 DATA
 1、数据占用的内存。如果top没有显示，按f键可以显示出来。
 2、真正的该程序要求的数据空间，是真正在运行中要使用的。
+
+插件htop
+安装：https://www.cnblogs.com/enet01/p/8316006.html
+     https://blog.csdn.net/assassinsshadow/article/details/79092209（更习惯）
+      #wget http://sourceforge.net/projects/htop/files/htop/1.0.2/htop-1.0.2.tar.gz(这个不用，确实Makefile文件)
+      #wget https://nchc.dl.sourceforge.net/project/htop/htop/1.0.2/htop-1.0.2.tar.gz
+      #tar -zxf htop-1.0.2.tar.gz
+      #cd htop-1.0.2
+      #./configure
+      #make 
+      #make install
+     yum install -y htop（最简单）
+     
+
+插件iftop
