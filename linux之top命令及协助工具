@@ -36,21 +36,138 @@ SHR：shared memory 共享内存
 3、计算某个进程所占的物理内存大小公式：RES – SHR
 4、swap out后，它将会降下来
 
+S 进程状态。（D=不可中断的睡眠状态，R=运行，S=睡眠，T=跟踪/停止，Z=僵尸进程）
+
+%CPU 上次更新到现在的CPU时间占用百分比
+
+%MEM 进程使用的物理内存百分比
+
+TIME+ 进程使用的CPU时间总计
+
 DATA
 1、数据占用的内存。如果top没有显示，按f键可以显示出来。
 2、真正的该程序要求的数据空间，是真正在运行中要使用的。
 
-插件htop
+★插件htop
 安装：https://www.cnblogs.com/enet01/p/8316006.html
+     https://www.cnblogs.com/phpandmysql/p/7944305.html（详细参考）
+     https://my.oschina.net/antsky/blog/1536897
      https://blog.csdn.net/assassinsshadow/article/details/79092209（更习惯）
-      #wget http://sourceforge.net/projects/htop/files/htop/1.0.2/htop-1.0.2.tar.gz(这个不用，确实Makefile文件)
+      1.源码包安装（失败）
+      #wget http://sourceforge.net/projects/htop/files/htop/1.0.2/htop-1.0.2.tar.gz（备用）
       #wget https://nchc.dl.sourceforge.net/project/htop/htop/1.0.2/htop-1.0.2.tar.gz
       #tar -zxf htop-1.0.2.tar.gz
       #cd htop-1.0.2
       #./configure
       #make 
       #make install
-     yum install -y htop（最简单）
-     
+      2.yum安装（成功）
+      yum install -y htop
+使用命令：htop
 
-插件iftop
+★插件iftop
+安装：https://www.vpser.net/manage/iftop.html（详细）
+     https://www.cnblogs.com/Initart/articles/3733520.html
+     
+了解iftop是做什么的，     
+     iftop是类似于top的实时流量监控工具。
+     官方网站：http://www.ex-parrot.com/~pdw/iftop/
+     iftop可以用来监控网卡的实时流量（可以指定网段）、反向解析IP、显示端口信息等。
+     
+编译安装：（tar  -z：有gzip属性的 -x：解压 -v：显示所有过程 -f: 使用档案名字，切记，这个参数是最后一个参数，后面只能接档案名）
+    安装前需要已经安装好基本的编译所需的环境，比如make、gcc、autoconf等。安装iftop还需要安装libpcap和libcurses。
+    特别是libpcap和libcurses，其他的之前可能安装了。
+    CentOS上安装所需依赖包：
+    yum install flex byacc  libpcap ncurses ncurses-devel libpcap-devel
+    正式安装：
+    wget  http://www.ex-parrot.com/~pdw/iftop/download/iftop-0.17.tar.gz
+    tar zxvf iftop-0.17.tar.gz
+    cd iftop-0.17
+    ./configure
+    make && make install
+
+运行命令：iftop
+
+介绍：
+1、iftop界面相关说明
+界面上面显示的是类似刻度尺的刻度范围，为显示流量图形的长条作标尺用的。
+
+中间的<= =>这两个左右箭头，表示的是流量的方向。
+
+TX：发送流量
+RX：接收流量
+TOTAL：总流量
+Cumm：运行iftop到目前时间的总流量
+peak：流量峰值
+rates：分别表示过去 2s 10s 40s 的平均流量
+
+2.常用参数
+-i设定监测的网卡，如：# iftop -i eth1
+
+-B 以bytes为单位显示流量(默认是bits)，如：# iftop -B
+
+-n使host信息默认直接都显示IP，如：# iftop -n
+
+-N使端口信息默认直接都显示端口号，如: # iftop -N
+
+-F显示特定网段的进出流量，如# iftop -F 10.10.1.0/24或# iftop -F 10.10.1.0/255.255.255.0
+
+-h（display this message），帮助，显示参数信息
+
+-p使用这个参数后，中间的列表显示的本地主机信息，出现了本机以外的IP信息;
+
+-b使流量图形条默认就显示;
+
+-f这个暂时还不太会用，过滤计算包用的;
+
+-P使host信息及端口信息默认就都显示;
+
+-m设置界面最上边的刻度的最大值，刻度分五个大段显示，例：# iftop -m 100M
+
+进入iftop画面后的一些操作命令(注意大小写)
+按h切换是否显示帮助;
+
+按n切换显示本机的IP或主机名;
+
+按s切换是否显示本机的host信息;
+
+按d切换是否显示远端目标主机的host信息;
+
+按t切换显示格式为2行/1行/只显示发送流量/只显示接收流量;
+
+按N切换显示端口号或端口服务名称;
+
+按S切换是否显示本机的端口信息;
+
+按D切换是否显示远端目标主机的端口信息;
+
+按p切换是否显示端口信息;
+
+按P切换暂停/继续显示;
+
+按b切换是否显示平均流量图形条;
+
+按B切换计算2秒或10秒或40秒内的平均流量;
+
+按T切换是否显示每个连接的总流量;
+
+按l打开屏幕过滤功能，输入要过滤的字符，比如ip,按回车后，屏幕就只显示这个IP相关的流量信息;
+
+按L切换显示画面上边的刻度;刻度不同，流量图形条会有变化;
+
+按j或按k可以向上或向下滚动屏幕显示的连接记录;
+
+按1或2或3可以根据右侧显示的三列流量数据进行排序;
+
+按<根据左边的本机名或IP排序;
+
+按>根据远端目标主机的主机名或IP排序;
+
+按o切换是否固定只显示当前的连接;
+
+按f可以编辑过滤代码，这是翻译过来的说法，我还没用过这个！
+
+按!可以使用shell命令，这个没用过！没搞明白啥命令在这好用呢！
+
+按q退出监控。
+
