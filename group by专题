@@ -55,5 +55,23 @@ count(*)  c
 4         乙
 理由以此类推。
 
+下面就是一个重点了，如果group by放两个参数呢？
+group by b,c
+这个其实也很简单，我们按照顺序先解读b字段，
+值：
+a   b
+接着解读c字段，
+a值对应c字段值有甲和乙
+b值对应c字段值有乙
+a    甲      4
+a    乙      1
+b    乙      3
 
+同理：
+group by c,b
+甲   a     4
+乙   b     3
+乙   a     1
+
+继续拓展可以参考MySQL划重点4
 【参考】https://blog.csdn.net/qq_27495157/article/details/76828525
