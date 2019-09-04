@@ -73,5 +73,10 @@ group by c,b
 乙   b     3
 乙   a     1
 
+因为用到group by常常会涉及where和having的问题，就顺便提一下，
+其实掌握顺序就很好理解了，
+★执行顺序：where>聚合函数(sum,min,max,avg,count)>having
+解析：where在聚合函数前执行，如果count(a)的结果where获取不到，但having可以。
+
 继续拓展可以参考MySQL划重点4
 【参考】https://blog.csdn.net/qq_27495157/article/details/76828525
