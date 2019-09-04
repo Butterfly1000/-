@@ -1,0 +1,59 @@
+mysql中聚合函数：
+1.COUNT()函数：用来统计记录的条数；
+2.SUM()函数:是求和函数； 
+3.AVG()函数:是求平均值的函数；
+4.MAX()函数是求最大值的函数； 
+5.MIN()函数是求最小值的函数；
+
+group by 一般和聚合函数一起使用才有意义,比如count sum avg等,使用group by的两个要素:
+(1) 出现在select后面的字段，要么是是聚合函数中的,要么就是group by 中的。
+(2) 要筛选结果 可以先使用where 再用group by 或者先用group by 再用having。
+
+test表：
+a     b      c
+1     a      甲
+1     a      甲
+1     a      甲
+1     a      甲
+1     a      乙
+1     b      乙
+1     b      乙
+1     b      乙
+
+如果单纯的使用group by会出现什么情况呢？
+select * from test group by a;
+1   a   甲
+select * from test group by b;
+1   a   甲
+1   b   乙
+select * from test group by c;
+1   a   乙
+1   a   甲
+可以看出,在group by后面的字段，select会显示出这个字段不同的值的第一行。
+例如：group by a，a的值只有1，获取第一行，1 a 甲;
+     group by  b,b不相同的值有a,b, 获取第一行，1   a   甲
+                                             1   b   乙
+     以此类推。
+     
+当然，单纯的group by是没有多少意义的。只有配合聚合函数才能发挥其作用。
+
+那么配合聚合函数后会出现什么样的效果呢？下面以count为例，其他的聚合函数以此类推即可，
+select count(*),a from test group by a;
+count(*)  a
+8         1
+从上表中我们可以看出，a字段为1一共有8条数据。
+
+select count(*),b from test group by b;
+count(*) b
+5        a
+3        b
+从上表中我们可以看出，b字段为a出现5条数据，为b出现3条数据。
+
+select count(*),c from test group by c;
+count(*)  c
+4         甲
+4         乙
+理由以此类推。
+
+
+【参考】https://blog.csdn.net/qq_27495157/article/details/76828525
