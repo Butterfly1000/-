@@ -1,0 +1,21 @@
+版权声明：本文为CSDN博主「NoBugExists」的原创文章，遵循 CC 4.0 BY-SA 版权协议，转载请附上原文出处链接及本声明。
+原文链接：https://blog.csdn.net/angus_01/article/details/80053840
+
+二分查找（数组里查找某个元素）
+function bin_sch($array,  $low, $high, $k){   
+    if ( $low <= $high){   
+        $mid =  intval(($low+$high)/2 );   
+        if ($array[$mid] ==  $k){   
+            return $mid;   
+        }elseif ( $k < $array[$mid]){   
+            return  bin_sch($array, $low,  $mid-1, $k);   
+        }else{   
+            return  bin_sch($array, $mid+ 1, $high, $k);   
+        }   
+    }   
+    return -1;   
+}   
+————————————————
+此方法针对索引数组并且value为从小到大进行排序 
+关联数组不适用、数组排序方式不一致或者无排序请相应修改if条件增加排序等
+
