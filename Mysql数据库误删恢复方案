@@ -1,0 +1,77 @@
+1.了解mysql的binlog日志 （注：binary二进制的）
+定义：
+binlog 就是binary log，二进制日志文件，这个文件记录了mysql所有的dml操作(数据操作语言，它是对表记录的操作【增、删、改】)。
+作用：
+通过binlog日志我们可以做数据恢复，做主主复制和主从复制等等。
+
+如何开启mysql的binlog日志呢？
+★方法一(方法一在低版本不奏效，可能要到mysql5.7及以上)
+在my.cnf（也有my.inf）主配置文件中[mysqld]区块直接添加三行
+log_bin=ON
+log_bin_basename=/var/lib/mysql/mysql-bin
+log_bin_index=/var/lib/mysql/mysql-bin.index
+
+三个参数来指定，
+第一个参数是打开binlog日志
+第二个参数是binlog日志的基本文件名，后面会追加标识来表示每一个文件
+第三个参数指定的是binlog文件的索引文件，这个文件管理了所有的binlog文件的目录
+
+或者
+
+★方法二
+log-bin=/var/lib/mysql/mysql-bin
+这一个参数的作用和上面三个的作用是相同的，mysql会根据这个配置自动设置log_bin为on状态，自动设置log_bin_index文件为你指定的文件名后跟.index
+
+注意：这些配置完毕之后对于5.7以下版本应该是可以了，但是我们这个时候用的如果是5.7及以上版本的话，重启mysql服务会报错。
+这个时候我们必须还要指定一个参数
+server-id=123454
+随机指定一个不能和其他集群中机器重名的字符串，如果只有一台机器，那就可以随便指定了。
+
+重启mysql服务器（看mysql运行环境）：
+service mariadb restart
+或
+service mysqld restart
+或
+service mysql restart
+
+查看：进入mysql -u 用户名 -p 密码, use mysql, show variables like '%log_bin%';
+看到log_bin = on，说明开启成功。
+
+2.创建数据
+CREATE DATABASE 数据库名; #常见数据库（以test为数据库名）
+use test; #进入数据库
+#创建数据表
+create table customers (
+  id int not null auto_increment,
+  name varchar(20) not null,
+  age int(5) not null,
+  primary key(id),
+)engine=innode;
+
+show tables #查看数据表（可以看到customers）
+
+desc customers  #查看表结构
+
+#添加数据
+insert into customers(id,name,age) values (1,"wangbo","24"),(2,"guohui","22"),(3,"zhangheng","27");
+insert into customers values (4,"linhao",20);
+insert into customers values ('',"sunyi",25);
+
+#查看数据
+select * from customers;
+
+3.进行备份（mysqldump）
+ mysqldump常用于MySQL数据库逻辑备份。
+
+mysqldump -uroot -p -B -F -R -x --master-data=2 ops|gzip >/opt/backup/ops_$(date +%F).sql.gz
+参数说明：
+-B：指定数据库
+-F：刷新日志
+-R：备份存储过程等
+-x：锁表
+--master-data：在备份语句里添加CHANGE MASTER语句以及binlog文件及位置点信息
+
+————————————————
+参考文档：
+链接：https://blog.csdn.net/king_kgh/article/details/74800513
+链接：https://www.cnblogs.com/kevingrace/p/5904800.html
