@@ -63,7 +63,7 @@ select * from customers;
 3.进行备份（mysqldump）
  mysqldump常用于MySQL数据库逻辑备份。
 
-mysqldump -uroot -p -B -F -R -x --master-data=2 ops|gzip >/opt/backup/ops_$(date +%F).sql.gz
+mysqldump -uroot -p -B -F -R -x --master-data=2 test|gzip >/opt/backup/test_$(date +%F).sql.gz
 参数说明：
 -B：指定数据库
 -F：刷新日志
@@ -71,6 +71,56 @@ mysqldump -uroot -p -B -F -R -x --master-data=2 ops|gzip >/opt/backup/ops_$(date
 -x：锁表
 --master-data：在备份语句里添加CHANGE MASTER语句以及binlog文件及位置点信息
 
+test 数据库名
+gzip 压缩
+
+"|"管道：Linux所提供的管道符“|”将两个命令隔开，管道符左边命令的输出就会作为管道符右边命令的输入。连续使用管道
+意味着第一个命令的输出会作为第二个命令的输入，第二个命令的输出又会作为第三个命令的输入，依此类推。
+
+#再次插入数据
+mysql> insert into customers values('',"liupeng","21");
+
+mysql> insert into customers values('',"xiaoda","31");
+
+mysql> insert into customers values('',"fuaiai","26");
+
+#误删数据
+drop database test;
+此时，全备之后到误操作时刻之间，用户写入的数据在binlog中，需要恢复出来!
+
+#首先查看全备之后新增的binlog文件
+gzip -d test_2019-10-22.sql.gz; #解压
+
+grep CHANGE test_2019-10-22.sql; #查找全备份时刻binlog文件的位置
+
+-- CHANGE MASTER TO MASTER_LOG_FILE='mysql-bin.000009', MASTER_LOG_POS=245; （查找结果）
+这是全备时刻的binlog文件位置，即mysql-bin.000009的245行，因此在该文件之前的binlog文件中的数据都已经包含在这个全备的sql文件中了。
+
+#找到文件
+cd /var/lib/mysql;
+
+#复制文件
+cp mysql-bin.000009  /opt/backup
+
+#即将binlog日志转化为可正常导入的sql文件
+mysqlbinlog mysql-bin.000009 >009bin.sql
+
+#用vim打开文件，删除掉误删的drop那行。
+
+注意：
+在恢复全备数据之前必须将该binlog文件移出，否则恢复过程中，会继续写入语句到binlog，最终导致增量恢复数据部分变得比较混乱
+
+#恢复数据
+mysql -uroot -p < test_2019-10-22.sql
+这样就恢复了备份的数据了，剩下的就是备份后新增的数据。
+mysql -uroot -p test < 009bin.sql
+这样就全部恢复了
+
+总结：
+1）本案例适用于人为SQL语句造成的误操作或者没有主从复制等的热备情况宕机时的修复
+2）恢复条件为mysql要开启binlog日志功能，并且要全备和增量的所有数据
+3）恢复时建议对外停止更新，即禁止更新数据库
+4）先恢复全量，然后把全备时刻点以后的增量日志，按顺序恢复成SQL文件，然后把文件中有问题的SQL语句删除（也可通过时间和位置点），再恢复到数据库。
 ————————————————
 参考文档：
 链接：https://blog.csdn.net/king_kgh/article/details/74800513
