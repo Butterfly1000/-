@@ -15,3 +15,32 @@ BTREE是最常见的优化要面对的索引结构，都是基于BTREE的讨论�
 外键索引：只有InnoDB引擎才可以使用外键索引，可以与主键构成参照完整性约束，保证数据一致性，完整性和实现级联操作 
 全文索引：Mysql自带只有MyISAM才拥有全文索引，并且是对英文进行全文索引。 ALTER TABLE `table_name` ADD FULLTEXT( `column`) 
 
+★索引不生效的场景 【参考原文地址】：https://www.siammm.cn/archives/100
+system > const > eq_ref > ref > fulltext > ref_or_null > index_merge > unique_subquery > index_subquery > range > index > ALL
+并不是建立了索引就在查询语句中生效。
+
+1.当语句中带有or的时候，索引会失效
+explain检验：完全没有索引等级为ALL，添加索引后等级位const（优秀级别）,使用or之后，等级回落到index（不理想级别：与ALL区别为index类型只遍历索引树）。
+
+2.当索引的字段使用like查询，并且使用了前通配比如%Siam，索引失效。后通配会生效Siam%
+explain检验：索引等级为const，使用了前通配'%Siam'等级掉到index，使用了后通配'Siam%'等级掉到range，全通配'%Siam%'等级也是掉到index。
+结论：like会使索引效率下降，后通配会好一点。
+
+3.当索引的字段是字符类型，但是储存的值是数字，比如 user_name:’123456’，在查询语句中要 user_name = ‘123456’而不能 user_name = 123456 
+否则发生类型转换，索引失效，其他类型的字段，比如日期等也同理。
+explain检验： user_name = ‘123456’(字符串)索引等级为const，user_name = 123456(整型)索引等级为index。
+
+4.当使用的条件语句，预计结果数量超过全表数据的一定比例时，会转为全表扫描（mysql一般是30%左右）这就是为什么在建立索引的时候要选择维度（区别度）比较高
+的列，性别这种字段不适合建立索引。
+
+5.语句中出现列数据运算才判断的，比如where age – 10 > 0 每一行都要运算之后才知道是否大于0; 所以就是全表扫描，如果age > 10 则可使用索引。
+使用函数转换列数据也一样原理。
+
+6.组合索引时使用的条件语句。
+
+上面举例的一些场景都是比较容易理解的。组合索引还没涉及，往下继续介绍。
+
+
+
+
+
