@@ -1,1 +1,4 @@
 mysqldump是Mysql备份工具。
+
+mysqldump -u Username -p Password test(数据库名) > /home/a.sql
+
