@@ -1,0 +1,53 @@
+使用nginx做反向代理，将请求发送到一个域名(例如: proxy_pass http://www.test.com 该域名对应的IP是A) ，刚开始运行一切正常，但是当运行了一段时间以后，
+域名对应的IP变了(例如http://www.test.com对应的IP由A变为B)，nginx的转发仍然还在向原先的IP发送请求，导致业务中断，此时reload nginx后才会重新恢复正常，
+且日志显示数据转发到新的IP B了，请问如何让nginx自动去重新解析域名，而不用每次出现问题了人工去reload？
+
+背景：此处只针对nginx向后端做代理，且后端代理为域名形式的这种情况做分析
+1、正常情况下 启动nginx后(或者 -t / reload nginx时)，nginx会通过操作系统配置的DNS服务器去解析域名对应的IP
+2、当nginx配置文件中的所有涉及到的域名都可以被正常解析到以后，才能启动(或者检查/重新加载)通过
+3、这里需要提醒一点，在 ../sbin/nginx -t 或者 ../sbin/ngins -s reload 只是检查域名是否可以解析通过，并不会在此时缓存域名对应IP，
+只有在通过nginx第一次向proxy_pass后端对应的域名做代理数据转发时，这里nginx会通过操作系统配置的DNS服务器解析域名，此时才会缓存域名对应的IP，
+且会缓存很长时间，甚至一个月(整个过程均有生产实例证明，且抓包验证)
+
+★分析与解决：
+1、既然是因为nginx缓存域名对应IP的DNS记录造成的，那么怎么才能解决呢，方法有两种：
+
+(1)、手动reload nginx，让nginx重新解析域名，这个时候解析到域名对应的IP是最新的，不会包含已经被废弃的IP
+
+(2)、设置nginx的DNS缓存时间，比如600s失效，然后重新去解析
+
+2、方法(2)当然是最好的，但是nginx的DNS缓存时间在哪里设置呢，我没有找到！
+
+3、但是我找到另外一种方法 -- nginx 的 resolver
+◆nginx的resolver 解决方案
+1、默认nginx会通过操作系统设置的DNS服务器(/etc/resolv.conf)去解析域名
+2、其实nginx还可以通过自身设置DNS服务器，而不用去找操作系统的DNS
+3、下面来讲一个这个resolver示例配置如下：
+server {
+       listen      8080;
+       server_name localhost;
+       resolver 114.114.114.114 223.5.5.5 valid=3600s;
+       resolver_timeout 3s;
+       set $qq "www.qq.com";
+       location / {
+          proxy_pass http://$qq;
+       }
+   }
+参数说明：
+# resolver 可以在http全局设定，也可在server里面设定# resolver 后面指定DNS服务器，可以指定多个，空格隔开
+
+# valid设置DNS缓存失效时间，自己根据情况判断，建议600以上
+
+# resolver_timeout 指定解析域名时，DNS服务器的超时时间，建议3秒左右
+
+#注意：当resolver 后面跟多个DNS服务器时，一定要保证这些DNS服务器都是有效的，因为这种是负载均衡模式的，当DNS记录失效了(超过valid时间)，
+首先由第一个DNS服务器(114.114.114.114)去解析，下一次继续失效时由第二个DNS服务器(223.5.5.5)去解析，亲自测试的，如有任何一个DNS服务器是坏的，
+那么这一次的解析会一直持续到resolver_timeout ，然后解析失败，且日志报错解析不了域名，通过页面抛出502错误。
+
+#重点：如上例，在代理到后端域名http://www.qq.com时，千万不要直接写在proxy_pass中，因为server中使用了resolver，
+所以必须先把域名定义到一个变量里面，然后在 proxy_pass http://$变量名，否则nginx语法检测一直会报错，提示解析不了域名后记整个过程亲测，没有问题。
+
+整体思路是这样，具体先记录。
+   
+【参考/转载文档：作者：黑板擦 链接：https://www.zhihu.com/question/61786355/answer/268735267】
+【参考：https://www.cnblogs.com/rexcheny/p/9381879.html】
