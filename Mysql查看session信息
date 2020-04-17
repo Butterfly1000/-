@@ -1,0 +1,19 @@
+1.显示哪些线程正在运行
+show processlist;
+
+2.获取timeout的变量
+show global variables like "%timeout%";
+
+3.获取meta信息 线程信息等
+
+利用information_schema
+
+select * from information_schema.innodb_trx ;
+
+
+
+------------------------
+原文链接：https://blog.csdn.net/yfx000/java/article/details/52934283
+
+原文链接:
+https://blog.csdn.net/xiaozhu0301/article/details/49469273?depth_1-utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-1&utm_source=distribute.pc_relevant.none-task-blog-BlogCommendFromBaidu-1
