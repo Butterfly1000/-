@@ -69,9 +69,20 @@ update zje set math=99 where math=68；
 会话相当于用户请求，如上，会话1先把zje表中math>60的行上排它锁。然后会话2试图把math=68的行进行修改，math=68处于math>60中，所以是已经被锁的，
 会话2进行操作时，就会阻塞，等待会话1把锁释放。当commit时或者程序结束时，会释放锁。
 
+-------------------------------
+一、什么是快照读与当前读
+快照读：
+
+所谓快照读就是一致性非锁定读，就是读取的是历史版本，不用加锁，提高并发。在数据库不同的隔离级别下读取的历史版本有所不同，
+在RR（REPEATABLE READ）隔离级别下读的历史版本总是事务刚开始的那一个版本，所以可以避免不可重复读与幻读，因为其对其他事务提交的数据是不可见的。
+在RC（READ COMMITTED）隔离级别下读的是最新的历史版本，或者是可见版本（另一个事务刚已经提交的数据），这样就会出现不可重复读现象。
+
+SELECT * FROM table WHERE ........
 
 
 
 
 参考/转载文档:
 https://blog.csdn.net/qq_32252917/article/details/83451550
+https://www.cnblogs.com/ljy-skill/p/10831708.html（有点实践篇的味道）
+https://blog.csdn.net/Wenlong_L/article/details/84133753
