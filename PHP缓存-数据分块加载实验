@@ -1,0 +1,10 @@
+Fackbook的BigPipe技术
+
+针对问题：商城
+
+1.将页面划分成一个个小块；
+2.利用ob_flush()与flush（）将缓冲区的内容提前输出给浏览器；
+3.浏览器在一个请求中不断接收并渲染到页面，逐个小块显示；
+  注:Js部分，不需要立即执行的部分，可以最后再eval进入
+  program data >> php buffer => tcp buffer => client brower  
+ 
