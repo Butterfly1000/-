@@ -6,28 +6,80 @@
 3.优化长难的查询语句
 4.优化特定类型的查询语句
 
-查找分析查询速度慢的原因
+★查找分析查询速度慢的原因
 分析SQL查询慢的方法
-记录慢查询日志
+1.记录慢查询日志（开启慢查询:set global slow_query_log=ON）
+
 分析查询日志,不要直接打开慢查询日志，这样比较浪费时间和精力，可以用pt-query-digest工具进行分析
+#直接分析慢查询文件
+# pt-query-digest  slow.log > slow_report.log
+#分析最近12小时内的查询
+# pt-query-digest  --since=12h  slow.log > slow_report2.log
 
-使用show profile
-set profiling=1；开启，服务器上所有执行的语句会检测消耗时间，记录到临时表中
-show profiles 查看情况
-show profile for query 临时表ID
+注：具体可参阅"MySQL日志查询分析工具pt-query-digest的安装和使用方法"章内容。
 
-使用show status
+2.使用show profile
+set profiling=1; #开启，服务器上所有执行的语句会检测消耗时间，记录到临时表中
+show profiles; #查看(临时表ID,执行时间,query语句)
++----------+------------+-----------------+
+| Query_ID | Duration   | Query           |
++----------+------------+-----------------+
+|        1 | 2.00026774 | select sleep(2) |
+|        2 | 1.00029249 | select sleep(1) |
++----------+------------+-----------------+
+
+show profile for query 临时表ID #可以查看该条语句每个环节具体消耗的时间
+
++----------------------+----------+
+| Status               | Duration |
++----------------------+----------+
+| starting             | 0.000055 |
+| checking permissions | 0.000006 |
+| Opening tables       | 0.000005 |
+| After opening tables | 0.000007 |
+| init                 | 0.000012 |
+| optimizing           | 0.000008 |
+| executing            | 0.000011 |
+| User sleep           | 2.000097 |
+| end                  | 0.000019 |
+| query end            | 0.000006 |
+| closing tables       | 0.000005 |
+| freeing items        | 0.000008 |
+| updating status      | 0.000020 |
+| logging slow query   | 0.000005 |
+| cleaning up          | 0.000005 |
++----------------------+----------+
+
+3.使用show status
 show status
 show global status 查看服务器级别的所有计数
 有时根据这些计数，可以猜测出哪些操作代价更高或者消耗时间多
 
 使用show processlist
 观察是否有大量线程处于不正常的状态或者特征
++----+------+-----------+------+---------+------+-------+------------------+----------+
+| Id | User | Host      | db   | Command | Time | State | Info             | Progress |
++----+------+-----------+------+---------+------+-------+------------------+----------+
+| 23 | root | localhost | NULL | Query   |    0 | NULL  | show processlist |    0.000 |
++----+------+-----------+------+---------+------+-------+------------------+----------+
 
-使用explain （别名desc效果一样）
+4.使用explain （别名desc效果一样）
 分析单条SQL语句
+select_type：查询中每个 select 子句的类型。
+table:名字，被操作的对象名称，通常的表名(或者别名)，但是也有其他格式。
+partitions:匹配的分区信息。
+type:join 类型。
+possible_keys：列出可能会用到的索引。
+key:实际用到的索引。（重点）
+key_len:用到的索引键的平均长度，单位为字节。
+ref:表示本行被操作的对象的参照对象，可能是一个常量用 const 表示，也可能是其他表的*（重点）
+key 指向的对象，比如说驱动表的连接列。
+rows:估计每次需要扫描的行数。（重点）
+filtered:rows*filtered/100 表示该步骤最后得到的行数(估计值)。
+extra:重要的补充信息。
 
-优化查询过程中的数据访问
+
+★优化查询过程中的数据访问
 1.访问数据太多导致查询性能下降
 2.确定应用程序是否在检索大量超过需求的数据，可能是太多行或列
 3.总是取出全部列，select * 会让优化器无法完成索引覆盖扫描的优化
