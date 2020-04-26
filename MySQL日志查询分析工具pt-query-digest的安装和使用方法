@@ -21,7 +21,8 @@ centos系统中pt-query-digest的单独安装方法：
 mysql>show variables like 'slow_query_log'
 如果slow_query_log为on则是开启。
 
-否则，在my.cnf里面添加如下配置：
+否则，
+1.在my.cnf里面添加如下配置：
 # 添加慢查询日志
 log_output=file
 slow_query_log=on
@@ -31,6 +32,18 @@ long_query_time = 1
 
 重启mysql，
 /bin/systemctl restart mariadb.service （我这边用的是mariadb，与mysql基本一致，同团队，mysql之父编写，效果更好，是开源代码，mysql现在不是了）
+
+或者
+
+2.直接设置全局变量：
+#将 slow_query_log 全局变量设置为“ON”状态
+mysql> set global slow_query_log='ON'; 
+
+#设置慢查询日志存放的位置
+mysql> set global slow_query_log_file='/usr/local/mysql/data/slow.log';
+
+#查询超过1秒就记录
+mysql> set global long_query_time=1;
 
 这时候slow_query_log从off变成on。并且生成mysql-slow.log文件。
 执行几条慢查询query，然后查看mysql-slow.log;
@@ -83,3 +96,4 @@ https://blog.csdn.net/qq_20610631/article/details/82052834
 https://www.36nu.com/post/228.html
 https://www.cnblogs.com/jiqing9006/p/9098181.html
 https://www.cnblogs.com/kerrycode/p/6433075.html
+https://www.cnblogs.com/luyucheng/p/6265594.html
