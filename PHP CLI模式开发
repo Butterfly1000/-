@@ -1,0 +1,43 @@
+PHP CLI模式开发不需要任何一种Web服务器（包括Apache或MS IIS等），这样，CLI可以运行在各种场合。
+有两种方法可以运行PHP CLI脚本。
+第一种方法是使用 # php /path/to/yourFile.php 调用PHP CLI解释器，并给脚本传递参数。这种方法要指定php解释器的路径。
+第二种方法是首先运行chmod +x <要运行的脚本文件名>（UNIX/Linux环境），将该PHP文件置为可执行权限，然后在CLI脚本头部第一行加入声明（类似于
+#! /usr/bin/php 或 PHP CLI 解释器位置），接着在命令行直接执行。
+
+一、从命令行上读取参数
+如果想从命令行获取参数，CLI可以从 $_SERVER['argv'] 和 $_SERVER['argc'] 取得参数的值和参数个数。
+我们建立一个文件，名字为 cliPHP1.php 脚本代码如下：
+
+#! /usr/local/php/bin/php -q
+<?php
+/**
+ * PHP CLI带有两个特殊的变量，专门用来达到这个目的：
+ * 一个是 $_SERVER['argv'] 变量，它通过命令行把传递给PHP脚本的参数保存为单独的数组元素；
+ * 另一是 $_SERVER['argc'] 变量，它用来保存$_SERVER['argv']数组里元素的个数。
+ *
+ *
+ * 运行效果：
+ * # /usr/local/php/bin/php ./cliPHP1.php  aa bb cc
+ * Array
+ * (
+ *  [0] => ./cliPHP1.php   ---> 0 指当前脚本名称
+ *  [1] => aa   --------------> 1 第1个参数
+ *  [2] => bb   --------------> 2 第2个参数
+ *  [3] => cc   --------------> n 第n个参数
+ * )
+ * number: 4 -----------------> 参数数量
+ * 
+ */
+
+ini_set('error_reporting', 'E_ALL & ~E_NOTICE');      //设置错误报告模式
+
+$argv = $_SERVER['argv']; //获取参数(array 数组)
+$argc = $_SERVER['argc']; //获取参数数量(integer 整数)
+
+print_r($argv);
+echo 'number: '.$argc;
+echo "\r\n";
+?>
+
+原文链接：
+https://www.cnblogs.com/martinzhang/p/3533604.html
