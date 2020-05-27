@@ -6,5 +6,22 @@ Fackbook的BigPipe技术
 2.利用ob_flush()与flush（）将缓冲区的内容提前输出给浏览器；
 3.浏览器在一个请求中不断接收并渲染到页面，逐个小块显示；
   注:Js部分，不需要立即执行的部分，可以最后再eval进入
-  program data >> php buffer => tcp buffer => client brower  
- 
+  program data >> php buffer => tcp buffer => client brower
+  
+问题1：ob_flush、flush无效。
+原因：
+apache环境
+1.开启了gzip输出，那么这个功能就会失效，因为gzip是把页面压缩后发送，本身存在冲突。
+2.apache/nginx的缓存区太大，导致不能输出，这个也就是 str_pad(" ",256) 调整大一些就可以了。
+
+nginx环境
+1.关闭gzip；
+2.选择了对于frsui模块按需关闭proxy_buffer和fastcgi_buffe；
+3.apache/nginx的缓存区太大，导致不能输出，这个也就是 str_pad(" ",256) 调整大一些就可以了。
+...(未完待续)
+
+----------------
+参考文章链接：
+http://www.phptext.net/article_view.php?id=624
+https://blog.csdn.net/qq8427003/article/details/64921349
+
