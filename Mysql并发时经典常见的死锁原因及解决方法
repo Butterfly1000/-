@@ -13,6 +13,54 @@ MySQL有三种锁的级别：页级、表级、行级。
 
 Next-Key Lock ：行锁和间隙锁组合起来就叫Next-Key Lock。
 
+★mysql中set autocommit=0与start transaction区别
+set autocommit=0指事务非自动提交，自此句执行以后，每个SQL语句或者语句块所在的事务都需要显示"commit"才能提交事务。
+
+1.不管autocommit 是1还是0 
+START TRANSACTION 后，只有当commit数据才会生效，ROLLBACK后就会回滚。
+
+2.当autocommit 为 0 时
+不管有没有START TRANSACTION。
+只有当commit数据才会生效，ROLLBACK后就会回滚。
+
+3.如果autocommit 为1 ，并且没有START TRANSACTION 。
+调用ROLLBACK是没有用的。即便设置了SAVEPOINT。
+
+★为什么需要锁：
+商品goods表中有一个字段status，status为1代表商品未被下单，status为2代表商品已经被下单，那么我们对某个商品下单时必须确保该商品status为1。
+假设商品的id为1。如果不采用锁，那么操作方法如下：
+
+//1.查询出商品信息
+select status from t_goods where id=1;
+//2.根据商品信息生成订单
+insert into t_orders (id,goods_id) values (null,1);
+//3.修改商品status为2
+update t_goods set status=2;
+
+上面这种场景在高并发访问的情况下很可能会出现问题。前面已经提到，只有当goods status为1时才能对该商品下单，上面第一步操作中，
+查询出来的商品status为1。但是当我们执行第三步Update操作的时候，有可能出现其他人先一步对商品下单把goods status修改为2了，
+但是我们并不知道数据已经被修改了，这样就可能造成同一个商品被下单2次，使得数据不一致。所以说这种方式是不安全的。
+
+使用悲观锁来实现：
+在上面的场景中，商品信息从查询出来到修改，中间有一个处理订单的过程，使用悲观锁的原理就是，当我们在查询出goods信息后就把当前的数据锁定，
+直到我们修改完毕后再解锁。
+那么在这个过程中，因为goods被锁定了，就不会出现有第三者来对其进行修改了。要使用悲观锁，我们必须关闭mysql数据库的自动提交属性。
+
+//0.开始事务
+begin;/begin work;/start transaction; (三者选一就可以)
+
+//1.查询出商品信息(用for update加了悲观锁)
+select status from t_goods where id=1 for update; 
+
+//2.根据商品信息生成订单
+insert into t_orders (id,goods_id) values (null,1);
+
+//3.修改商品status为2
+update t_goods set status=2;
+
+//4.提交事务
+commit;/commit work;
+
 ★什么情况下会造成死锁？
 所谓死锁<DeadLock>: 是指两个或两个以上的进程在执行过程中,因争夺资源而造成的一种互相等待的现象,若无外力作用,它们都将无法推进下去.
 此时称系统处于死锁状态或系统产生了死锁,这些永远在互相等竺的进程称为死锁进程。
@@ -44,18 +92,106 @@ B用户金额随机分为2份，分给借款人2，1
 
 由于加锁的顺序不一样，死锁当然很快就出现了。
 
+▲解析一下哈：这就是一个事务，把A投资人投资金额随机分配给1,2
+<?php
+ M()->startTrans();
+ $get_man = [];
+ foreach($user as $key=>$v){
+   //每个投资人用户分配两个借款人
+   for($i=0;$i<2;$i++){
+     $query = 'Select * from xxx where id='随机id' for update';
+     $res=M()->query($query);
+     $get_man[$key][$i]=$res['id'];
+   }
+ }
+ ...
+ commit / rollback
  
+ 然而，在A投资人for循环锁住1的同时，另一个会话也同时启动了，通过for循环锁住2。（不要认为小概率，多几个人试试）
+ 那么，在A准备锁2的时候必须等待B投资人解除2锁定，而B投资人同样在等待A解除1锁定后才能释放2锁定，然后就死锁了。
+
+解决方案：解决顺序问题，让锁的顺序一致，从小到大
 
 对于这个问题的改进很简单，直接把所有分配到的借款人直接一次锁住就行了。
 
 Select * from xxx where id in (xx,xx,xx) for update
 
-在in里面的列表值mysql是会自动从小到大排序，加锁也是一条条从小到大加的锁
+在in里面的列表值mysql是会自动从小到大排序，加锁也是一条条从小到大加的锁。
 
-https://blog.csdn.net/qq_35779969/article/details/80074998
+举个例子：
+会话1：
+mysql> select * from t3 where id in (8,10) for update;
+会按顺序锁住8,10
+
+会话2：
+select * from t3 where id in (10,8,5) for update;
+会按顺序锁住5,8,10
+
+这样，
+会话1锁住8，
+会话2锁住5后，会等待会话1释放8的锁，这时候8和10都没上锁（按顺序），
+会话1锁住10，然后释放8和10，
+会话2再锁住8，10。
+
+案例二：
+在开发中，经常会做这类的判断需求：根据字段值查询（有索引），如果不存在，则插入；否则更新。
+
+以id为主键为例，目前还没有id=22的行
+会话1:
+select * from t3 where id=22 for update;
+Empty set (0.00 sec)
+
+会话2:
+select * from t3 where id=23  for update;
+Empty set (0.00 sec)
+
+会话1:
+insert into t3 values(22,'ac','a',now());
+锁等待中……
+
+会话2:
+insert into t3 values(23,'bc','b',now());
+ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting transaction
+
+原因：
+当对存在的行进行锁的时候(主键)，mysql就只有行锁。
+当对未存在的行进行锁的时候(即使条件为主键)，mysql是会锁住一段范围（有gap锁）。
+
+锁住的范围为：
+(无穷小或小于表中锁住id的最大值，无穷大或大于表中锁住id的最小值)
+
+条件：锁23
+如果表中目前有已有的id为11,12,
+23大于12，
+那么就锁住12 ~ ∞（无穷大）
+
+如果表中目前已有的id为11,30
+23在11~30之间，
+那么就锁住11~30
+
+解决办法：
+
+注：用mysql特有的语法来解决此问题。因为insert语句对于主键来说，插入的行不管有没有存在，都会只有行锁。
+
+案例3：
+
+
+
+
+
+
+
+
+
+
+
+
+
+参考/原文链接：
+https://blog.csdn.net/qq_35779969/article/details/80074998  #for update的一些介绍
 https://www.cnblogs.com/sivkun/p/7518540.html
-https://blog.csdn.net/qiurongfeng/article/details/89456920
-https://www.cnblogs.com/lhp2012/p/5315928.html
-https://blog.csdn.net/liqfyiyi/article/details/72771845
+https://blog.csdn.net/qiurongfeng/article/details/89456920 #set autocommit=0为何不起作用及对于事务隔离性的理解
+https://www.cnblogs.com/lhp2012/p/5315928.html #mysql中set autocommit=0与start transaction区别
+https://blog.csdn.net/liqfyiyi/article/details/72771845 #InnoDB锁机制之Gap Lock、Next-Key Lock、Record Lock解析
 https://www.cnblogs.com/zejin2008/p/5262751.html
-https://blog.csdn.net/alin1215/article/details/103695300
+https://blog.csdn.net/yucaifu1989/article/details/79400446 #mysql查看死锁和解除锁
