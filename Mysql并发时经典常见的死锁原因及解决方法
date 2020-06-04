@@ -170,28 +170,51 @@ ERROR 1213 (40001): Deadlock found when trying to get lock; try restarting trans
 那么就锁住11~30
 
 解决办法：
+MySQL的ON DUPLICATE KEY UPDATE用法：
+1.若数据表中存在以相同主键的记录，就更新该条记录。
+2.否则就插入一条新的记录。
 
-注：用mysql特有的语法来解决此问题。因为insert语句对于主键来说，插入的行不管有没有存在，都会只有行锁。
+例子：
+insert into t3(a,b) values(x1,x2) on duplicate key update `b`='X2';
+
+原因：用mysql特有的语法来解决此问题。因为insert语句对于主键来说，插入的行不管有没有存在，都会只有“行锁”。
 
 案例3：
+直接上情景：
+会话1（注意会话1的两个语句都在事务中）
+mysql> select * from t3 where id=9 for update;  #锁住9
 
+会话2
+mysql> select * from t3 where id<20 for update; #锁住1~8，等待9
 
+会话1
+mysql> insert into t3 values(7,'ae','a',now()); #等待会话2释放7的锁，而会话2还在等待会话1释放9的锁，形成死锁。
 
+这种一般是在业务需求中基本不会出现，因为你锁住了id=9，却又想插入id=7的行，这就有点跳了，当然肯定也有解决的方法，那就是重理业务需求，避免这样的写法。
 
+案例4：
+如果在事务中执行了一条不满足条件的update语句，则执行全表扫描，把行级锁上升为表级锁，多个这样的事务执行后，就很容易产生死锁和阻塞。类似的情，况还有
+当表中的数据量非常庞大而索引建的过少或不合适的时候，使得经常发生全表扫描，最终应用系统会越来越慢，最终发生阻塞或死锁。
 
+解决方法：
+SQL语句中不要使用太复杂的关联多表的查询;使用“执行计划”对SQL语句进行分析，对于有全表扫描的SQL语句，建立相应的索引进行优化。
 
+★真的出现死锁问题解决办法：
+show processlist；
+kill 进程id
 
-
-
-
-
-
+★总结
+1.整理好逻辑，加锁顺序一定要有一致的顺序；
+2.不要随便给不存在的内容加锁，如果要，建议用on duplicate key update；
+3.在一个事务中，尽量完成锁住的内容，未锁住内容的操作避免；
+4.事务中尽量执行正确的、满足条件的语句；
+5.多思考逻辑，在测试环境尽量解决问题。
 
 参考/原文链接：
 https://blog.csdn.net/qq_35779969/article/details/80074998  #for update的一些介绍
-https://www.cnblogs.com/sivkun/p/7518540.html
+https://www.cnblogs.com/sivkun/p/7518540.html #https://www.cnblogs.com/sivkun/p/7518540.html
 https://blog.csdn.net/qiurongfeng/article/details/89456920 #set autocommit=0为何不起作用及对于事务隔离性的理解
 https://www.cnblogs.com/lhp2012/p/5315928.html #mysql中set autocommit=0与start transaction区别
 https://blog.csdn.net/liqfyiyi/article/details/72771845 #InnoDB锁机制之Gap Lock、Next-Key Lock、Record Lock解析
-https://www.cnblogs.com/zejin2008/p/5262751.html
+https://www.cnblogs.com/zejin2008/p/5262751.html #Mysql并发时经典常见的死锁原因及解决方法
 https://blog.csdn.net/yucaifu1989/article/details/79400446 #mysql查看死锁和解除锁
