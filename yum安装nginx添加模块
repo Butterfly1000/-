@@ -1,0 +1,42 @@
+之前的nginx是通过yum安装的，而里面的模块还是不太全，导致在需要的时候缺少模块。
+下文针对该现象进行处理。（思路：转成编译安装）
+
+★查看nginx版本模块（修改/usr/sbin/nginx名称后就看不了）
+nginx -V #目前的nginx版本及所安装的模块。
+nginx -v #版本号 nginx version: nginx/1.14.0
+
+★备份
+备份文件
+mv /usr/sbin/nginx /usr/sbin/nginx.20200701
+cp -r /etc/nginx /etc/nginx.20200701
+
+★下载一个同版本的可编译的nginx
+wget http://nginx.org/download/nginx-1.14.0.tar.gz
+tar zxvf nginx-1.14.0.tar.gz && cd nginx-1.14.0
+
+★检查模块是否支持，比如这次添加 limit 限流模块 和 stream 模块：
+./configure –help | grep limit
+ps：-without-http_limit_conn_module disable 表示已有该模块，编译时，不需要添加
+
+./configure –help | grep stream
+ps：–with-stream enable 表示不支持，编译时要自己添加该模块
+
+根据上面查到(nginx -V)已有的模块，加上本次需新增的模块，那么最终结果如下：
+./configure 
+--prefix=/etc/nginx --sbin-path=/usr/sbin/nginx --modules-path=/usr/lib64/nginx/modules --conf-path=/etc/nginx/nginx.conf --error-log-path=/var/log/nginx/error.log --http-log-path=/var/log/nginx/access.log --pid-path=/var/run/nginx.pid --lock-path=/var/run/nginx.lock --http-client-body-temp-path=/var/cache/nginx/client_temp --http-proxy-temp-path=/var/cache/nginx/proxy_temp --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp --http-scgi-temp-path=/var/cache/nginx/scgi_temp --user=nginx --group=nginx --with-compat --with-file-aio --with-threads --with-http_addition_module --with-http_auth_request_module --with-http_dav_module --with-http_flv_module --with-http_gunzip_module --with-http_gzip_static_module --with-http_mp4_module --with-http_random_index_module --with-http_realip_module --with-http_secure_link_module --with-http_slice_module --with-http_ssl_module --with-http_stub_status_module --with-http_sub_module --with-http_v2_module --with-mail --with-mail_ssl_module --with-stream --with-stream_realip_module --with-stream_ssl_module --with-stream_ssl_preread_module --with-cc-opt='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC' --with-ld-opt='-Wl,-z,relro -Wl,-z,now -pie'
+
+★编译通过，继续验证
+继续输入：make
+禁止：千万不要继续输入“make install”，以免现在的nginx出现问题！！！
+以上完成后，会在objs目录下生成一个nginx文件，先验证：
+objs/nginx -t
+objs/nginx -V
+
+★文件替换，并重启
+以上成功后：
+cp objs/nginx /usr/sbin/
+nginx -s reload
+
+参考文章：
+https://blog.csdn.net/zzy5066/article/details/81136273
+https://blog.csdn.net/wolf131721/article/details/100523318
